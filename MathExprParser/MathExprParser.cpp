@@ -579,7 +579,7 @@ namespace mathexpr
 				{
 				case EExprType::Function0:
 					// func0()
-					Ptr = NewExpr(EExprType::Variable);
+					Ptr = NewExpr(EExprType::Function0);
 					Ptr->function = ExprState.MetaValue.Addr;
 					NextToken();
 
@@ -610,7 +610,7 @@ namespace mathexpr
 				case EExprType::Function5:
 				case EExprType::Function6:
 				case EExprType::Function7:
-					Ptr = NewExpr(EExprType::Variable);
+					Ptr = NewExpr(Func);
 					Ptr->function = ExprState.MetaValue.Addr;
 
 					int ArgsCount = (int)Func - (int)EExprType::Function0;
