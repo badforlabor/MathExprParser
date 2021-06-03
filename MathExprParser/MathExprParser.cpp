@@ -1,6 +1,7 @@
 ﻿
 #include "MathExprParser.h"
 #include <cmath>
+#include <assert.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -32,14 +33,14 @@ namespace mathexpr
 	static double FMod(double a, double b) { return fmod(a, b); }
 	static double NegateOp(double a) { return -a; }
 	static double CommaOp(double a, double b) { (void)a; return b; }
-	static bool AndOp(bool a, bool b) { return a && b; }
-	static bool OrOp(bool a, bool b) { return a || b; }
-	static bool EqualOp(bool a, bool b) { return a == b; }
-	static bool NotEqualOp(bool a, bool b) { return a != b; }
-	static bool LessOp(bool a, bool b) { return a < b; }
-	static bool LequalOp(bool a, bool b) { return a <= b; }
-	static bool BigOp(bool a, bool b) { return a > b; }
-	static bool BequalOp(bool a, bool b) { return a >= b; }
+	static double AndOp(double a, double b) { return a && b ? 1 : 0; }
+	static double OrOp(double a, double b) { return a || b ? 1 : 0; }
+	static double EqualOp(double a, double b) { return a == b ? 1 : 0; }
+	static double NotEqualOp(double a, double b) { return a != b ? 1 : 0; }
+	static double LessOp(double a, double b) { return a < b ? 1 : 0; }
+	static double LequalOp(double a, double b) { return a <= b ? 1 : 0; }
+	static double BigOp(double a, double b) { return a > b ? 1 : 0; }
+	static double BequalOp(double a, double b) { return a >= b ? 1 : 0; }
 
 	static double Abs(double a) { return abs(a); }
 	static double ACos(double a) { return acos(a); }
@@ -157,6 +158,7 @@ namespace mathexpr
 		case EExprType::Function7:
 			return TE_FUN(double, double, double, double, double, double, double)(M(0), M(1), M(2), M(3), M(4), M(5), M(6));
 		}
+		assert(0);
 	}
 
 
@@ -286,7 +288,7 @@ namespace mathexpr
 					if (ExprState.GetNext() == '&')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = AndOp;
 					}
 					else
@@ -299,65 +301,70 @@ namespace mathexpr
 					if (ExprState.GetNext() == '|')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = OrOp;
 					}
 					else
 					{
 						ExprState.MarkError(__FILE__, __LINE__);
 					}
+					break;
 
 				case '=':
 					if (ExprState.GetNext() == '=')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = EqualOp;
 					}
 					else
 					{
 						ExprState.MarkError(__FILE__, __LINE__);
 					}
+					break;
 
 				case '!':
 					if (ExprState.GetNext() == '=')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = NotEqualOp;
 					}
 					else
 					{
 						ExprState.MarkError(__FILE__, __LINE__);
 					}
+					break;
 
 				case '>':
 					if (ExprState.GetNext() == '=')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = BequalOp;
 					}
 					else
 					{
 						Step = 1;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = BigOp;
 					}
+					break;
 
 				case '<':
 					if (ExprState.GetNext() == '=')
 					{
 						Step = 2;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = LequalOp;
 					}
 					else
 					{
 						Step = 1;
-						ExprState.Type = ETokenType::Operand;
+						ExprState.Type = ETokenType::LogicOperand;
 						ExprState.function = LessOp;
 					}
+					break;
 
 				default:
 					ExprState.MarkError(__FILE__, __LINE__);
@@ -381,9 +388,15 @@ namespace mathexpr
 	int FMathExpr::ParseSyntax()
 	{
 		NextToken();
-
-		auto Ptr = SyntaxComma();
-		RootExpr = Ptr;
+				
+		if (bLogic)
+		{
+			RootExpr = SyntaxLogic();
+		}
+		else
+		{
+			RootExpr = SyntaxCalc();
+		}
 
 		if (ExprState.Type == ETokenType::Error)
 		{
@@ -397,6 +410,11 @@ namespace mathexpr
 		}
 
 		return 0;
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxCalc()
+	{
+		return SyntaxComma();
 	}
 
 	FCommonExprPtr FMathExpr::SyntaxComma()
@@ -514,7 +532,14 @@ namespace mathexpr
 		case ETokenType::BracketOpen:
 			// 括号里面，是一个完整的表达式
 			NextToken();
-			Ptr = SyntaxComma();
+			if (bLogic)
+			{
+				Ptr = SyntaxLogic();
+			}
+			else
+			{
+				Ptr = SyntaxComma();
+			}
 			if (ExprState.Type == ETokenType::BracketClose)
 			{
 				NextToken();
@@ -634,6 +659,86 @@ namespace mathexpr
 			Ptr->value = NAN;
 			ExprState.MarkError(__FILE__, __LINE__);
 			break;
+		}
+
+		return Ptr;
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxLogic()
+	{
+		return SyntaxLogicOr();
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxLogicOr()
+	{
+		// 逗号操作符 a,b，不支持a,b,c
+		FCommonExprPtr Ptr;
+
+		Ptr = SyntaxLogicAnd();
+
+		while (ExprState.Type == ETokenType::LogicOperand && ExprState.function == OrOp)
+		{
+			NextToken();
+			Ptr = NewExpr(EExprType::Function2, Ptr, SyntaxLogicAnd());
+			Ptr->function = OrOp;
+		}
+
+		return Ptr;
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxLogicAnd()
+	{
+		// 逗号操作符 a,b，不支持a,b,c
+		FCommonExprPtr Ptr;
+
+		Ptr = SyntaxLogicEqualOrNot();
+
+		while (ExprState.Type == ETokenType::LogicOperand && ExprState.function == AndOp)
+		{
+			NextToken();
+			Ptr = NewExpr(EExprType::Function2, Ptr, SyntaxLogicEqualOrNot());
+			Ptr->function = AndOp;
+		}
+
+		return Ptr;
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxLogicEqualOrNot()
+	{
+		// 逗号操作符 a,b，不支持a,b,c
+		FCommonExprPtr Ptr;
+
+		Ptr = SyntaxLogicBigSmall();
+
+		if (ExprState.Type == ETokenType::LogicOperand
+			&& (ExprState.function == EqualOp || ExprState.function == NotEqualOp))
+		{
+			auto Old = ExprState.function;
+			NextToken();
+			Ptr = NewExpr(EExprType::Function2, Ptr, SyntaxLogicBigSmall());
+			Ptr->function = Old;
+		}
+
+		return Ptr;
+	}
+
+	mathexpr::FCommonExprPtr FMathExpr::SyntaxLogicBigSmall()
+	{
+		// 逗号操作符 a,b，不支持a,b,c
+		FCommonExprPtr Ptr;
+
+		Ptr = SyntaxComma();
+
+		if (ExprState.Type == ETokenType::LogicOperand
+			&& (ExprState.function == LessOp 
+				|| ExprState.function == LequalOp
+				|| ExprState.function == BigOp
+				|| ExprState.function == BequalOp))
+		{
+			auto Old = ExprState.function;
+			NextToken();
+			Ptr = NewExpr(EExprType::Function2, Ptr, SyntaxComma());
+			Ptr->function = Old;
 		}
 
 		return Ptr;

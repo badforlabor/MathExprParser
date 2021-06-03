@@ -19,10 +19,10 @@ typedef struct {
 
 
 
-double te_interp(const char *expression, int *error) {
+double te_interp(const char *expression, int *error, bool logic = false) {
 	using namespace mathexpr;
 	FMathExpr One;
-	int n = One.Parse(false, expression);
+	int n = One.Parse(logic, expression);
 	double ret;
 	if (n == 0) {
 		ret = One.Exec();
@@ -163,6 +163,19 @@ void test_results() {
 
 	};
 
+	test_case cases2[] = {
+		{"1", 1},
+		{"1 && 0", 0},
+		{"1 || 0", 1},
+		{"1>2 || 0>1", 0},
+		{"1>2 || 1>0", 1},
+		{"1>2 && 1>0", 0},
+		{"1!=2 && 1!=0", 1},
+		{"1==2 || 1==0", 0},
+		{"1!=2 || 1==0", 1},
+		{"(1==2 || 1==0) || (1!=2 || 1==0)", 1},
+		{"(1==2 || 1==0) || (1!=2 || 1==0)", 0},
+	};
 
 	int i;
 	for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
@@ -172,12 +185,29 @@ void test_results() {
 		int err;
 		const double ev = te_interp(expr, &err);
 		lok(!err);
-		lfequal(ev, answer);
+		lfequal_expr(ev, answer, expr);
 
 		if (err) {
 			printf("FAILED: %s (%d)\n", expr, err);
 		}
 	}
+
+	printf("\n=============== logic exp test ===============\n");
+
+	for (i = 0; i < sizeof(cases2) / sizeof(test_case); ++i) {
+		const char *expr = cases2[i].expr;
+		const double answer = cases2[i].answer;
+
+		int err;
+		const double ev = te_interp(expr, &err, true);
+		lok(!err);
+		lfequal_expr(ev, answer, expr);
+
+		if (err) {
+			printf("FAILED: %s (%d)\n", expr, err);
+		}
+	}
+
 }
 
 
@@ -201,6 +231,7 @@ void test_syntax() {
 		// 以下语法是不支持的。
 		{"--(1e2^(+(-(-(-.5e0))))+1e0)", 2},
 		{"ln exp .5", 2},
+		{"sin 0.5", 3},
 
 		// pi是函数，所以不支持；如果pi是变量，那么是支持的
 		{"pi", 2},

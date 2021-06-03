@@ -108,12 +108,19 @@ namespace mathexpr
 		virtual void NextToken();
 		virtual int ParseSyntax();
 
+		FCommonExprPtr SyntaxCalc();
 		FCommonExprPtr SyntaxComma();
 		FCommonExprPtr SyntaxAddSub();
 		FCommonExprPtr SyntaxMulDivide();
 		FCommonExprPtr SyntaxPow();
 		FCommonExprPtr SyntaxMinus();
 		FCommonExprPtr SyntaxBase();
+
+		FCommonExprPtr SyntaxLogic();
+		FCommonExprPtr SyntaxLogicOr();
+		FCommonExprPtr SyntaxLogicAnd();
+		FCommonExprPtr SyntaxLogicEqualOrNot();
+		FCommonExprPtr SyntaxLogicBigSmall();
 
 		// 是否是逻辑运算
 		bool bLogic = false;
