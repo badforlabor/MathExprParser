@@ -368,3 +368,100 @@ void test_dynamic() {
 		lfequal_expr(ret, answer, expr);
 	}
 }
+
+
+
+void test_dynamic2() {
+	using namespace mathexpr;
+
+	double x, f;
+	te_variable lookup[] = {
+		{"x", &x, EExprType::Variable},
+		{"f", &f, EExprType::Variable},
+		{"sum0", sum0, EExprType::Function0},
+		{"sum1", sum1, EExprType::Function1},
+		{"sum2", sum2, EExprType::Function2},
+		{"sum3", sum3, EExprType::Function3},
+		{"sum4", sum4, EExprType::Function4},
+		{"sum5", sum5, EExprType::Function5},
+		{"sum6", sum6, EExprType::Function6},
+		{"sum7", sum7, EExprType::Function7},
+	};
+
+	test_case cases[] = {
+		{"x", 2},
+		{"f+x", 7},
+		{"x+x", 4},
+		{"x+f", 7},
+		{"f+f", 10},
+		{"f+sum0()", 11},
+		{"sum0()+sum0()", 12},
+		{"sum0()+sum0()", 12},
+		{"sum0()+sum0()", 12},
+		{"sum0()+(0)+sum0()", 12},
+		{"sum1(sum0())", 12},
+		{"sum1 (sum0())", 12},
+		{"sum1(f)", 10},
+		{"sum1 (x)", 4},
+		{"sum2 (sum0(), x)", 8},
+		{"sum3 (sum0(), x, 2)", 10},
+		{"sum2(2,3)", 5},
+		{"sum3(2,3,4)", 9},
+		{"sum4(2,3,4,5)", 14},
+		{"sum5(2,3,4,5,6)", 20},
+		{"sum6(2,3,4,5,6,7)", 27},
+		{"sum7(2,3,4,5,6,7,8)", 35},
+	};
+
+	x = 2;
+	f = 5;
+
+	// 动态token
+	class FMathExpr2 : public FMathExpr
+	{
+	public:
+		FMathExpr2(const std::vector<FCustomVariable>& InCustomTable)
+			:FMathExpr()
+		{
+			CustomTable = InCustomTable;
+		}
+	protected:
+		virtual FCustomVariable DynamicToken(const std::string& str) override
+		{
+			for (auto& It : CustomTable)
+			{
+				if (It.Name == str)
+				{
+					return It;
+				}
+			}
+			return FCustomVariable{};
+		}
+
+		std::vector<FCustomVariable> CustomTable;
+	};
+
+	std::vector<FCustomVariable> CustomTable;
+	{
+		auto variables = lookup;
+		auto var_count = sizeof(lookup) / sizeof(te_variable);
+		CustomTable.reserve(var_count);
+		for (int i = 0; i < var_count; i++)
+		{
+			CustomTable.push_back(variables[i]);
+		}
+	}
+	FMathExpr2 Expr2(CustomTable);
+
+	int i;
+	for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+		const char *expr = cases[i].expr;
+		const double answer = cases[i].answer;
+		
+		int Err = Expr2.Parse(false, expr);
+
+		lok(Err == 0);
+		auto ret = Expr2.Exec();
+		lfequal_expr(ret, answer, expr);
+	}
+}

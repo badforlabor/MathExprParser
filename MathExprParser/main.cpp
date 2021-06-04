@@ -21,6 +21,9 @@ int main()
 	extern void test_dynamic();
 	test_dynamic();
 
+	extern void test_dynamic2();
+	test_dynamic2();
+
 	std::cout << "Hello World!\n";
 }
 

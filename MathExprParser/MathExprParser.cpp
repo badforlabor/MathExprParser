@@ -13,6 +13,10 @@
 
 namespace mathexpr
 {	
+	static void Assert(bool b)
+	{
+		assert(b);
+	}
 	template<class T>
 	T Max(T a, T b)
 	{
@@ -117,11 +121,10 @@ namespace mathexpr
 		return NewExpr(Type, nullptr, nullptr);
 	}
 
-#define TE_FUN(...) ((double(*)(__VA_ARGS__))Ptr->function)
-#define M(e) ExecValue(Ptr->Parameters[e])
-
 	double ExecValue(FCommonExprPtr Ptr)
 	{
+#define TE_FUN(...) ((double(*)(__VA_ARGS__))Ptr->function)
+#define M(e) ExecValue(Ptr->Parameters[e])
 		if (Ptr == nullptr)
 		{
 			return 0;
@@ -169,7 +172,10 @@ namespace mathexpr
 		case EExprType::Function7:
 			return TE_FUN(double, double, double, double, double, double, double)(M(0), M(1), M(2), M(3), M(4), M(5), M(6));
 		}
-		assert(0);
+		Assert(0);
+
+#undef TE_FUN
+#undef M
 	}
 
 
@@ -277,8 +283,16 @@ namespace mathexpr
 					}
 					else
 					{
-						ExprState.MarkError(__FILE__, __LINE__);
-						break;
+						auto DToken = DynamicToken(ExprState.TokenStr);
+						if (DToken.Name.size() > 0)
+						{
+							ExprState.MetaValue = DToken;
+						}
+						else
+						{
+							ExprState.MarkError(__FILE__, __LINE__);
+							break;
+						}
 					}
 				}
 			}
@@ -459,7 +473,7 @@ namespace mathexpr
 	{
 		// 加减操作符 a+b+c
 		FCommonExprPtr Ptr;
-
+		
 		Ptr = SyntaxMulDivide();
 		while (ExprState.Type == ETokenType::Operand && (ExprState.function == Add || ExprState.function == Sub))
 		{
@@ -558,7 +572,7 @@ namespace mathexpr
 			}
 			else
 			{
-				Ptr = SyntaxComma();
+				Ptr = SyntaxCalc();
 			}
 			if (ExprState.Type == ETokenType::BracketClose)
 			{

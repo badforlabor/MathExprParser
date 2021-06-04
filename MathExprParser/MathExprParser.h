@@ -23,8 +23,8 @@ namespace mathexpr
 		BracketClose,	// 右括号
 		Number,			// 数字
 		Variable,		// 变量
-		Operand,				// 操作符
-		LogicOperand,
+		Operand,		// 操作符
+		LogicOperand,	// 逻辑操作符
 	};
 	enum class EExprType
 	{
@@ -55,15 +55,12 @@ namespace mathexpr
 	{
 		return static_cast<EExprType>(static_cast<int>(a) - static_cast<int>(b));
 	}
-	inline EExprType operator^(EExprType a, EExprType b)
-	{
-		return static_cast<EExprType>(static_cast<int>(a) ^ static_cast<int>(b));
-	}
 
 
 	struct FCommonExpr
 	{
 		EExprType Type = EExprType::None;
+		// 这个union有个问题，如果是32位系统，那么三个元素占用的大小不一样。
 		union { double value; const double *bound; const void *function; };
 		std::vector<std::shared_ptr<FCommonExpr>> Parameters;
 	};
@@ -109,6 +106,11 @@ namespace mathexpr
 	protected:
 		virtual void NextToken();
 		virtual int ParseSyntax();
+
+		// 动态识别一个token
+		virtual FCustomVariable DynamicToken(const std::string& str) {
+			return FCustomVariable();
+		}
 
 		FCommonExprPtr SyntaxCalc();
 		FCommonExprPtr SyntaxComma();
