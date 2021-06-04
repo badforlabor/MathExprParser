@@ -13,6 +13,21 @@
 
 namespace mathexpr
 {
+	inline void* ConstToVoid(double v)
+	{
+		float v2 = v;
+		int ipi = *(int*)&v2;
+		void* p = (void*)ipi;
+		return p;
+	}
+	inline float VoidToConst(void* p)
+	{
+		int n = (long long)p;
+		float r = *(float*)&n;
+		return r;
+	}
+
+
 	enum class ETokenType
 	{
 		None,		
@@ -70,6 +85,7 @@ namespace mathexpr
 	{
 		std::string Name;
 		void* Addr = 0;
+		//union { double value; const double *bound; const void *Addr; };
 		EExprType Type = EExprType::None;
 	};
 
@@ -102,6 +118,11 @@ namespace mathexpr
 		int Parse(bool bInLogic, const char* Expr);
 
 		double Exec();
+
+		std::string GetExpr() const
+		{
+			return ExprState.OrigStr;
+		}
 
 	protected:
 		virtual void NextToken();

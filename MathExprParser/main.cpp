@@ -6,6 +6,38 @@
 
 int main()
 {
+	{
+		float n = 1;
+		float a = *(float*)(&n);
+		printf("%.2f\n", a);
+	}
+
+	{
+		float pi = 3.1415f;
+		int ipi = *(int*)&pi;
+		void* p = (void*)ipi;
+		
+		int n = (int)p;
+		float r = *(float*)&n;
+		printf("%.4f\n", r);		
+	}
+
+	{
+		void* p = mathexpr::ConstToVoid(3.1415);
+		float v = mathexpr::VoidToConst(p);
+		printf("%.4f\n", v);
+	}
+
+	{
+		void* p = mathexpr::ConstToVoid(3);
+		float v = mathexpr::VoidToConst(p);
+		printf("%.4f\n", v);
+	}
+
+
+
+
+
 	using namespace mathexpr;
 	FMathExpr One;
 	One.Parse(false, "1+2*3/4%5^3");

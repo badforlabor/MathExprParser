@@ -378,6 +378,7 @@ void test_dynamic2() {
 	te_variable lookup[] = {
 		{"x", &x, EExprType::Variable},
 		{"f", &f, EExprType::Variable},
+		{"z", ConstToVoid(1), EExprType::Constant},
 		{"sum0", sum0, EExprType::Function0},
 		{"sum1", sum1, EExprType::Function1},
 		{"sum2", sum2, EExprType::Function2},
@@ -390,6 +391,8 @@ void test_dynamic2() {
 
 	test_case cases[] = {
 		{"x", 2},
+		{"z", 1},
+		{"x+z+x+z", 6},
 		{"f+x", 7},
 		{"x+x", 4},
 		{"x+f", 7},

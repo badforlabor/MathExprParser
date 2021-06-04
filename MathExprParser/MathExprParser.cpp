@@ -29,7 +29,7 @@ namespace mathexpr
 	}
 	static bool IsAlpha(char c)
 	{
-		return (c >= 'a' && c < 'z') || (c >= 'A' && c <= 'Z');
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 	}
 	static bool IsVariable(char c)
 	{
@@ -129,6 +129,11 @@ namespace mathexpr
 		{
 			return 0;
 		}
+
+		if (Ptr->Type == EExprType::None)
+		{
+			return 0;
+		}
 		
 		if (Ptr->Type == EExprType::Constant)
 		{
@@ -176,6 +181,8 @@ namespace mathexpr
 
 #undef TE_FUN
 #undef M
+
+		return 0;
 	}
 
 
@@ -594,6 +601,12 @@ namespace mathexpr
 			if (ExprState.MetaValue.Type == EExprType::None)
 			{
 				ExprState.MarkError(__FILE__, __LINE__);
+			}
+			else if (ExprState.MetaValue.Type == EExprType::Constant)
+			{
+				Ptr = NewExpr(EExprType::Constant);
+				Ptr->value = VoidToConst(ExprState.MetaValue.Addr);
+				NextToken();
 			}
 			else if (ExprState.MetaValue.Type == EExprType::Variable)
 			{
