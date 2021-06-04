@@ -13,6 +13,12 @@
 
 namespace mathexpr
 {	
+	template<class T>
+	T Max(T a, T b)
+	{
+		return a > b ? a : b;
+	}
+
 	static bool IsNumeric(char c)
 	{
 		return c >= '0' && c <= '9';
@@ -121,9 +127,14 @@ namespace mathexpr
 			return 0;
 		}
 		
-		if (Ptr->Type == EExprType::Variable)
+		if (Ptr->Type == EExprType::Constant)
 		{
 			return Ptr->value;
+		}
+
+		if (Ptr->Type == EExprType::Variable)
+		{
+			return *(Ptr->bound);
 		}
 
 		auto Func = Ptr->Type;
@@ -169,21 +180,30 @@ namespace mathexpr
 
 	int FMathExpr::Parse(bool bInLogic, const char* Expr)
 	{
-		bLogic = bInLogic;		
+		return Parse(bInLogic, Expr, std::vector<FCustomVariable>());
+	}
+	
+	int FMathExpr::Parse(bool bInLogic, const char* Expr, const std::vector<FCustomVariable>& InCustomTable)
+	{
+		bLogic = bInLogic;
 		ExprState = FExprState{};
 
 		ExprState.OrigStr = Expr;
-
+		for (auto& It : InCustomTable)
+		{
+			ExprState.CustomTable[It.Name] = It;
+		}
 
 		int Ret = ParseSyntax();
 		//if (ExprState.Type == ETokenType::Error)
 		//{
 		//	return ExprState.CurPos;
 		//}
-		
+
 		return Ret;
+
 	}
-	
+
 	double FMathExpr::Exec()
 	{
 		return ExecValue(RootExpr);
@@ -400,13 +420,13 @@ namespace mathexpr
 
 		if (ExprState.Type == ETokenType::Error)
 		{
-			return ExprState.CurPos;
+			return Max(size_t(1), ExprState.CurPos);
 		}
 		else if (ExprState.Type != ETokenType::End)
 		{
 			ExprState.MarkError(__FILE__, __LINE__);
 			// 错误
-			return ExprState.CurPos;
+			return Max(size_t(1), ExprState.CurPos);
 		}
 
 		return 0;
@@ -551,7 +571,7 @@ namespace mathexpr
 			break;
 
 		case ETokenType::Number:
-			Ptr = NewExpr(EExprType::Variable, nullptr, nullptr);
+			Ptr = NewExpr(EExprType::Constant);
 			Ptr->value = ExprState.value;
 			NextToken();
 			break;

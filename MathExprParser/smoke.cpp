@@ -40,19 +40,42 @@ double te_interp(const char *expression, int *error, bool logic = false) {
 	}
 	return ret;
 }
-struct te_expr {
-
-};
-struct te_variable {
-
-};
+//struct te_expr {
+//
+//};
+//struct te_variable : mathexpr::FCustomVariable {
+//
+//};
+using te_variable = mathexpr::FCustomVariable;
+using te_expr = mathexpr::FMathExpr;
 te_expr *te_compile(const char *expression, const te_variable *variables, int var_count, int *error) {
 
 	using namespace mathexpr;
-	FMathExpr One;
-	int n = One.Parse(false, expression);
-	*error = n;
 
+	std::vector<FCustomVariable> CustomTable;
+	CustomTable.reserve(var_count);
+	for (int i = 0; i < var_count; i++)
+	{
+		CustomTable.push_back(variables[i]);
+	}
+
+
+	static FMathExpr One;
+	int n = One.Parse(false, expression, CustomTable);
+	*error = n;
+	if (n > 0)
+	{
+		return nullptr;
+	}
+
+	return &One;
+}
+double te_eval(te_expr *expr)
+{
+	if (expr)
+	{
+		return expr->Exec();
+	}
 	return 0;
 }
 
@@ -246,11 +269,11 @@ void test_syntax() {
 
 		int err;
 		const double r = te_interp(expr, &err);
-		lequal(err, e);
+		lfequal_expr(err, e, expr);
 		lok(r != r);
 
 		te_expr *n = te_compile(expr, 0, 0, &err);
-		lequal(err, e);
+		lfequal_expr(err, e, expr);
 		lok(!n);
 
 		if (err != e) {
@@ -259,5 +282,89 @@ void test_syntax() {
 
 		const double k = te_interp(expr, 0);
 		lok(k != k);
+	}
+}
+
+static double sum0() {
+	return 6;
+}
+static double sum1(double a) {
+	return a * 2;
+}
+static double sum2(double a, double b) {
+	return a + b;
+}
+static double sum3(double a, double b, double c) {
+	return a + b + c;
+}
+static double sum4(double a, double b, double c, double d) {
+	return a + b + c + d;
+}
+static double sum5(double a, double b, double c, double d, double e) {
+	return a + b + c + d + e;
+}
+static double sum6(double a, double b, double c, double d, double e, double f) {
+	return a + b + c + d + e + f;
+}
+static double sum7(double a, double b, double c, double d, double e, double f, double g) {
+	return a + b + c + d + e + f + g;
+}
+
+
+void test_dynamic() {
+	using namespace mathexpr;
+
+	double x, f;
+	te_variable lookup[] = {
+		{"x", &x, EExprType::Variable},
+		{"f", &f, EExprType::Variable},
+		{"sum0", sum0, EExprType::Function0},
+		{"sum1", sum1, EExprType::Function1},
+		{"sum2", sum2, EExprType::Function2},
+		{"sum3", sum3, EExprType::Function3},
+		{"sum4", sum4, EExprType::Function4},
+		{"sum5", sum5, EExprType::Function5},
+		{"sum6", sum6, EExprType::Function6},
+		{"sum7", sum7, EExprType::Function7},
+	};
+
+	test_case cases[] = {
+		{"x", 2},
+		{"f+x", 7},
+		{"x+x", 4},
+		{"x+f", 7},
+		{"f+f", 10},
+		{"f+sum0()", 11},
+		{"sum0()+sum0()", 12},
+		{"sum0()+sum0()", 12},
+		{"sum0()+sum0()", 12},
+		{"sum0()+(0)+sum0()", 12},
+		{"sum1(sum0())", 12},
+		{"sum1 (sum0())", 12},
+		{"sum1(f)", 10},
+		{"sum1 (x)", 4},
+		{"sum2 (sum0(), x)", 8},
+		{"sum3 (sum0(), x, 2)", 10},
+		{"sum2(2,3)", 5},
+		{"sum3(2,3,4)", 9},
+		{"sum4(2,3,4,5)", 14},
+		{"sum5(2,3,4,5,6)", 20},
+		{"sum6(2,3,4,5,6,7)", 27},
+		{"sum7(2,3,4,5,6,7,8)", 35},
+	};
+
+	x = 2;
+	f = 5;
+
+	int i;
+	for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+		const char *expr = cases[i].expr;
+		const double answer = cases[i].answer;
+
+		int err;
+		te_expr *ex = te_compile(expr, lookup, sizeof(lookup) / sizeof(te_variable), &err);
+		lok(ex);
+		auto ret = te_eval(ex);
+		lfequal_expr(ret, answer, expr);
 	}
 }

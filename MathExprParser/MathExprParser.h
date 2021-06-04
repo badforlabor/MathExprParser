@@ -30,6 +30,7 @@ namespace mathexpr
 	{
 		None,
 		Variable = 1,	// 变量
+		Constant = 2,	// 固定数值
 		
 		Function0 = 8,	// 没有参数的函数
 		Function1,	// 只有一个参数的函数
@@ -100,6 +101,7 @@ namespace mathexpr
 		virtual ~FMathExpr() {}
 		FMathExpr();
 
+		int Parse(bool bInLogic, const char* Expr, const std::vector<FCustomVariable>& InCustomTable);
 		int Parse(bool bInLogic, const char* Expr);
 
 		double Exec();

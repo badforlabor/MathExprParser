@@ -18,6 +18,9 @@ int main()
 	extern void test_syntax();
 	test_syntax();
 
+	extern void test_dynamic();
+	test_dynamic();
+
 	std::cout << "Hello World!\n";
 }
 
